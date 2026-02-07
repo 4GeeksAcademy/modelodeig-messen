@@ -1,9 +1,16 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, ForeignKey
+from sqlalchemy import String, Boolean, ForeignKey, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List
 
 db = SQLAlchemy()
+
+Follower = Table(
+    "followers",
+    db.metadata,
+    Column("user_from_id", ForeignKey("user.id"), primary_key=True),
+    Column("user_to_id", ForeignKey("user.id"), primary_key=True)
+)
 
 class User(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -12,6 +19,22 @@ class User(db.Model):
     username: Mapped[str] = mapped_column(String(40), unique=True, nullable=False)
     firstname: Mapped[str] = mapped_column(String(50), nullable=False)
     lastname: Mapped[str] = mapped_column(String(50))
+    followers: Mapped[List["User"]] = relationship(
+        "User",
+        secondary=Follower,
+        primaryjoin=id==Follower.c.user_to_id,      
+        secondaryjoin=id==Follower.c.user_from_id,  
+        back_populates="following",
+        foreign_keys=[Follower.c.user_to_id, Follower.c.user_from_id]
+    )
+    following: Mapped[List["User"]] = relationship(
+        "User",
+        secondary=Follower,
+        primaryjoin=id==Follower.c.user_from_id,      
+        secondaryjoin=id==Follower.c.user_to_id, 
+        back_populates="followers",
+        foreign_keys=[Follower.c.user_from_id, Follower.c.user_to_id]
+    )
 
     posts: Mapped[list["Post"]] = relationship(
         back_populates="author" 
@@ -21,14 +44,6 @@ class User(db.Model):
         back_populates="author"
     )
 
-    followers: Mapped[list["Follower"]] = relationship(
-        foreign_keys="Follower.user_to_id"
-    )
-
-    following: Mapped[list["Follower"]] = relationship(
-        foreign_keys="Follower.user_from_id"
-    )
-
 
     def serialize(self):
         return {
@@ -36,7 +51,8 @@ class User(db.Model):
             "email": self.email,
             "username": self.username,
             "firstname": self.firstname,
-            "lastname": self.lastname
+            "lastname": self.lastname,
+            "followers": self.followers
             # do not serialize the password, its a security breach
         }
 
@@ -103,14 +119,3 @@ class Post(db.Model):
             "user_id": self.id
         }
     
-class Follower(db.Model):
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_from_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
-    user_to_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
-
-    def serialize(self):
-        return{
-            "id": self.id,
-            "user_from_id": self.user_from_id,
-            "user_to_id": self.user_to_id
-        }
