@@ -14,7 +14,7 @@ class User(db.Model):
     lastname: Mapped[str] = mapped_column(String(50))
 
     posts: Mapped[list["Post"]] = relationship(
-        back_populates="comment" 
+        back_populates="author" 
     )
 
     comments: Mapped[list["Comment"]] = relationship(
@@ -66,11 +66,11 @@ class Comment(db.Model):
     author_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
     post: Mapped["Post"] = relationship(
-        back_populates="comment"
+        back_populates="comments"
     )
 
     author: Mapped["User"] = relationship(
-        back_populates="comment"
+        back_populates="comments"
     )
 
     def serialize(self):
@@ -86,7 +86,7 @@ class Post(db.Model):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
     author: Mapped["User"] = relationship(
-      back_populates="post"
+      back_populates="posts"
     )
 
     comments: Mapped["Comment"] = relationship(
