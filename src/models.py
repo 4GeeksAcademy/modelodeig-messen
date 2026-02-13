@@ -52,7 +52,8 @@ class User(db.Model):
             "username": self.username,
             "firstname": self.firstname,
             "lastname": self.lastname,
-            "followers": self.followers
+            "followers": [User.serialize() for user in self.followers], 
+            "following": [User.serialize() for user in self.following]
             # do not serialize the password, its a security breach
         }
 
@@ -94,7 +95,8 @@ class Comment(db.Model):
           "id": self.id,
           "comment_text": self.comment_text,
           "post_id": self.post_id,
-          "author_id": self.author_id
+          "author_id": self.author_id,
+          "post": [Comment.serialize() for comment in self.post]
         }
 
 class Post(db.Model):
@@ -116,6 +118,8 @@ class Post(db.Model):
     def serialize(self):
         return{
             "id": self.id,
-            "user_id": self.id
+            "user_id": self.user_id,
+            "comments": self.comments
+            
         }
     
